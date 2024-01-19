@@ -1,7 +1,8 @@
-https://aws.github.io/aws-emr-containers-best-practices/submit-applications/docs/spark/pyspark/#list-of-packages
 
-https://github.com/aws-samples/emr-serverless-samples
+# EMR Serverless POC
 
+## Simple Script
+---
 aws emr-serverless start-job-run --region us-west-2 \
     --name simple \
     --application-id 00fgcgig5fto4o0l \
@@ -19,6 +20,8 @@ aws emr-serverless start-job-run --region us-west-2 \
         }
     }'
 
+## Read Postgres with dependencies on Maven
+---
 aws emr-serverless start-job-run --region us-west-2 \
     --name jdbc \
     --application-id 00fgcgig5fto4o0l \
@@ -45,7 +48,8 @@ aws emr-serverless start-job-run --region us-west-2 \
         }
     }'
 
-
+## Read Postgres with dependencies on S3
+---
 aws emr-serverless start-job-run --region us-west-2 \
     --name jdbc-s3-jar \
     --application-id 00fgcgig5fto4o0l \
@@ -72,7 +76,8 @@ aws emr-serverless start-job-run --region us-west-2 \
         }
     }'
 
-
+## Read/Write from S3
+---
 aws emr-serverless start-job-run --region us-west-2 \
     --name s3 \
     --application-id 00fgcgig5fto4o0l \
@@ -99,8 +104,8 @@ aws emr-serverless start-job-run --region us-west-2 \
     }'
 
 
-=================================================================
-Custom image
+## Custom Docker Image with dependencies into it
+---
 
 aws emr-serverless start-job-run --region us-west-2 \
     --name jdbc-custom-image \
@@ -127,4 +132,10 @@ aws emr-serverless start-job-run --region us-west-2 \
         }
     }'
 
-# Log is 'SPARK_DRIVE'
+> Log is 'SPARK_DRIVE'
+
+## Insightful links
+---
+https://aws.github.io/aws-emr-containers-best-practices/submit-applications/docs/spark/pyspark/#list-of-packages
+
+https://github.com/aws-samples/emr-serverless-samples

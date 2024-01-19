@@ -36,7 +36,7 @@ aws emr-serverless start-job-run --region us-west-2 \
               "--user",
               "adminuser",
               "--password",
-              "OMMiaHXZV%EbG8VxLrm6"
+              "XXXXXXXXXXXXXXXXX"
             ]
         }
     }' \
@@ -64,7 +64,7 @@ aws emr-serverless start-job-run --region us-west-2 \
               "--user",
               "adminuser",
               "--password",
-              "OMMiaHXZV%EbG8VxLrm6"
+              "XXXXXXXXXXXXXXXXX"
             ]
         }
     }' \
@@ -120,7 +120,7 @@ aws emr-serverless start-job-run --region us-west-2 \
               "--user",
               "adminuser",
               "--password",
-              "OMMiaHXZV%EbG8VxLrm6"
+              "XXXXXXXXXXXXXXXXX"
             ]
         }
     }' \

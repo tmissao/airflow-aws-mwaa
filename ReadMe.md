@@ -50,7 +50,7 @@ In order to run the scripts locally perform the following steps
 - Run these commands:
 ```bash
 # Application directory
-cd app
+cd python
 
 # Installs the correct python version (3.9)
 pyenv local

@@ -117,3 +117,66 @@ data "aws_iam_policy_document" "demo_emr_vm" {
     actions   = ["sts:AssumeRole"]
   }
 }
+
+data aws_iam_policy_document "demo_emr_vm_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchGetImage",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeImages",
+      "ecr:DescribeRepositories",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:ListImages",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart"
+    ]
+    resources = [aws_ecr_repository.emr.arn]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:GetAuthorizationToken",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "iam:PassRole",
+			"emr-serverless:StartJobRun",
+			"emr-serverless:StartApplication",
+    ]
+    resources = [
+      aws_emrserverless_application.basic.arn,
+      aws_emrserverless_application.custom_image.arn
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "iam:PassRole",
+    ]
+    resources = [
+      aws_iam_role.emr_serverless.arn
+    ]
+  }
+}
+
+resource "aws_iam_role" "demo_emr_vm" {
+  name = "allow_ec2_to_push_to_ecr"
+  assume_role_policy = "${data.aws_iam_policy_document.demo_emr_vm.json}"
+}
+
+resource "aws_iam_role_policy" "demo_emr_vm" {
+  name       = "allow_ec2_to_push_to_ecr"
+  role       = aws_iam_role.demo_emr_vm.name
+  policy = data.aws_iam_policy_document.demo_emr_vm_policy.json
+}
+
+resource "aws_iam_instance_profile" "demo_emr_vm" {
+  name = "allow_ec2_to_push_to_ecr"
+  role = aws_iam_role.demo_emr_vm.name
+}

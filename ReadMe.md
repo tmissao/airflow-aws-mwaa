@@ -1,141 +1,81 @@
 
-# EMR Serverless POC
+# EMR Serverless
 
-## Simple Script
+This repository intends to provision all underline infrastructure in order to execute [Spark Jobs](https://spark.apache.org/) using [Amazon EMR Serverless](https://aws.amazon.com/emr/serverless/). Also it exemplifies how to execute simple Spark Jobs, how to handle Spark Dependencies and how to performed ordinary task like read from database and read/write from S3.
+
+![Architecture](./artifacts/pictures/architecture.png)
+
+
+In order to performes theses ordinary task the follow scripts were developed:
+
+- [`simple.py`](./python/scripts/simple.py) - Creates a Dataframe and uses Pandas printing the result.
+- [`jdbc.py`](./python/scripts/jdbc.py) - Reads Data from a Postgres Database and prints the result. **Requires [Postgres Library](https://mvnrepository.com/artifact/org.postgresql/postgresql/42.7.1)**.
+- [`s3.py`](./python/scripts/s3.py) - Reads Data from a CSV saved on S3, and saves it back after perform some transformations. 
+
+To demonstrate how to handle dependencies the script [`jdbc.py`](./python/scripts/jdbc.py) is executed three times
+
+- `jdbc-maven` - Download the dependencies directly from [Maven Repository](https://mvnrepository.com/) using the Spark config `--packages`.
+- `jdbc-s3` - Download the dependencies previously upload on S3 using the Spark config `--jars`.
+- `jdbc-s3-custom-docker-image` - Builds a Docker Image from this [Dockerfile](./Dockerfile) embedding the dependencies in this custom image and uses it to execute the job.
+
+The Custom Docker image build process and the jobs submissions are performed by the Virtual Machine provisioned in [vm.tf](./terraform/vm.tf). Also this machine executes a Postgres Database with sample data.
+
+> If you would like to know how the jobs are submitted check this [script](./terraform/scripts/setup.sh).
+
+## Requisites
 ---
-aws emr-serverless start-job-run --region us-west-2 \
-    --name simple \
-    --application-id 00fgcgig5fto4o0l \
-    --execution-role-arn arn:aws:iam::801578398305:role/EmrServerlessExecutor \
-    --job-driver '{
-        "sparkSubmit": {
-            "entryPoint": "s3://demo-emr-37908/scripts/simple.py"
-        }
-    }' \
-    --configuration-overrides '{
-        "monitoringConfiguration": {
-            "s3MonitoringConfiguration": {
-                "logUri": "s3://demo-emr-37908/logs/"
-            }
-        }
-    }'
+- [Create an AWS Account](https://aws.amazon.com/)
+- [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [Configure AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html)
+- [Install TF_ENV](https://github.com/tfutils/tfenv)
+- [Configure Terraform AWS Authentication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#environment-variables)
 
-## Read Postgres with dependencies on Maven
----
-aws emr-serverless start-job-run --region us-west-2 \
-    --name jdbc \
-    --application-id 00fgcgig5fto4o0l \
-    --execution-role-arn arn:aws:iam::801578398305:role/EmrServerlessExecutor \
-    --job-driver '{
-        "sparkSubmit": {
-            "entryPoint": "s3://demo-emr-37908/scripts/jdbc.py",
-            "sparkSubmitParameters": "--packages org.postgresql:postgresql:42.7.1",
-            "entryPointArguments": [
-              "--url",
-              "jdbc:postgresql://global-sonarqube-psql.postgres.database.azure.com:5432/postgres",
-              "--user",
-              "adminuser",
-              "--password",
-              "XXXXXXXXXXXXXXXXX"
-            ]
-        }
-    }' \
-    --configuration-overrides '{
-        "monitoringConfiguration": {
-            "s3MonitoringConfiguration": {
-                "logUri": "s3://demo-emr-37908/logs/"
-            }
-        }
-    }'
+## Running
 
-## Read Postgres with dependencies on S3
----
-aws emr-serverless start-job-run --region us-west-2 \
-    --name jdbc-s3-jar \
-    --application-id 00fgcgig5fto4o0l \
-    --execution-role-arn arn:aws:iam::801578398305:role/EmrServerlessExecutor \
-    --job-driver '{
-        "sparkSubmit": {
-            "entryPoint": "s3://demo-emr-37908/scripts/jdbc.py",
-            "sparkSubmitParameters": "--jars s3://demo-emr-37908/jars/postgresql-42.7.1.jar",
-            "entryPointArguments": [
-              "--url",
-              "jdbc:postgresql://global-sonarqube-psql.postgres.database.azure.com:5432/postgres",
-              "--user",
-              "adminuser",
-              "--password",
-              "XXXXXXXXXXXXXXXXX"
-            ]
-        }
-    }' \
-    --configuration-overrides '{
-        "monitoringConfiguration": {
-            "s3MonitoringConfiguration": {
-                "logUri": "s3://demo-emr-37908/logs/"
-            }
-        }
-    }'
+In order to execute the application, run the following commands.
 
-## Read/Write from S3
----
-aws emr-serverless start-job-run --region us-west-2 \
-    --name s3 \
-    --application-id 00fgcgig5fto4o0l \
-    --execution-role-arn arn:aws:iam::801578398305:role/EmrServerlessExecutor \
-    --job-driver '{
-        "sparkSubmit": {
-            "entryPoint": "s3://demo-emr-37908/scripts/s3.py",
-            "entryPointArguments": [
-              "--data_source",
-              "s3://acqio-dev-uswe2-applicationlogs-s3/logstash/2024/01/06/07/*",
-              "--output_uri",
-              "s3://demo-emr-37908/reports/emr-serverless",
-              "--s3_endpoint",
-              "s3-us-west-2.amazonaws.com"
-            ]
-        }
-    }' \
-    --configuration-overrides '{
-        "monitoringConfiguration": {
-            "s3MonitoringConfiguration": {
-                "logUri": "s3://demo-emr-37908/logs/"
-            }
-        }
-    }'
+```bash
+cd terraform
+tfenv install
+tfenv use
+terraform init
+terraform apply
+```
 
+## Running Locally
 
-## Custom Docker Image with dependencies into it
+In order to run the scripts locally perform the following steps
+
+- [Install PyEnv](https://github.com/pyenv/pyenv) - optional [link](https://realpython.com/intro-to-pyenv/)
+- Run these commands:
+```bash
+# Application directory
+cd app
+
+# Installs the correct python version (3.9)
+pyenv local
+
+# Creates Python Virtual Environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Installs required libraries
+pip install -r requirements.txt
+
+# Executes the Script
+python scripts/simple.py --local # Do not forget to pass the required arguments
+
+```
+
+## Results
 ---
 
-aws emr-serverless start-job-run --region us-west-2 \
-    --name jdbc-custom-image \
-    --application-id 00fgdeqj886cn70l \
-    --execution-role-arn arn:aws:iam::801578398305:role/EmrServerlessExecutor \
-    --job-driver '{
-        "sparkSubmit": {
-            "entryPoint": "s3://demo-emr-37908/scripts/jdbc.py",
-            "entryPointArguments": [
-              "--url",
-              "jdbc:postgresql://global-sonarqube-psql.postgres.database.azure.com:5432/postgres",
-              "--user",
-              "adminuser",
-              "--password",
-              "XXXXXXXXXXXXXXXXX"
-            ]
-        }
-    }' \
-    --configuration-overrides '{
-        "monitoringConfiguration": {
-            "s3MonitoringConfiguration": {
-                "logUri": "s3://demo-emr-37908/logs/"
-            }
-        }
-    }'
+![Results-00](./artifacts/pictures/results-00.png)
+![Results-01](./artifacts/pictures/results-01.png)
 
-> Log is 'SPARK_DRIVE'
-
-## Insightful links
+## References
 ---
-https://aws.github.io/aws-emr-containers-best-practices/submit-applications/docs/spark/pyspark/#list-of-packages
 
-https://github.com/aws-samples/emr-serverless-samples
+[Tutorial](https://www.youtube.com/watch?v=grfSNj2EMwo&ab_channel=JohnnyChivers)
+[EMR Containers Best Practices](https://aws.github.io/aws-emr-containers-best-practices/)
+[EMR Containers Examples](https://github.com/aws-samples/emr-serverless-samples)

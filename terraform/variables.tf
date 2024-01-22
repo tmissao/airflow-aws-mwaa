@@ -33,6 +33,10 @@ variable "emr_studio" {
   }
 }
 
+variable "postgres_user" {
+  default = "postgres"
+}
+
 variable "tags" {
   type = map(string)
   default = {

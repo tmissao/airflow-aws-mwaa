@@ -28,7 +28,7 @@ def get_spark_session(is_local: bool = False) -> SparkSession:
 
 
 def run(spark: SparkSession, database_url: str, database_user: str, database_password: str):
-    table = "projects"
+    table = "sale"
 
     properties = {
         "url": database_url,
@@ -47,7 +47,7 @@ def run(spark: SparkSession, database_url: str, database_user: str, database_pas
     df_query = (
             spark.read.format("jdbc")
             .options(**properties)
-            .option("query", "Select * from projects p where p.name like 'Spokane%' ")
+            .option("query", "select * from sale s where s.amount > 500 ")
             .load()
     )
 

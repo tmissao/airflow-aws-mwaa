@@ -33,8 +33,9 @@ def run(spark: SparkSession, s3_source: str, s3_endpoint: str):
     print(f"Spark version = {spark.version}")
     # hadoop
     print(f"Hadoop version = {spark._jvm.org.apache.hadoop.util.VersionInfo.getVersion()}")
-    df = spark.read.json(s3_source)
-    df = df.where(df.AppName == "E5.Gateway").select("@timestamp", "AppName", "SourceFile")
+    df = spark.read.csv(s3_source, header=True, ignoreLeadingWhiteSpace=True)
+    df.show(10)
+    df = df.where(df.State == "CA").select("City", "State")
     df.show(10)
     df.coalesce(1).write.csv(s3_endpoint, quoteAll=True, header=True, sep=",", mode="overwrite")
     

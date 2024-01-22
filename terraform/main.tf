@@ -6,6 +6,7 @@ resource "random_integer" "this" {
 
 resource "aws_s3_bucket" "this" {
   bucket =  "${var.s3.name}-${random_integer.this.result}"
+  force_destroy = true
   tags = var.tags
 }
 
@@ -43,6 +44,13 @@ resource "aws_s3_object" "pyspark_s3_script" {
   source = "../python/scripts/s3.py"
 }
 
+resource "aws_s3_object" "cities_csv" {
+  bucket = aws_s3_bucket.this.id
+  acl    = "private"
+  key    = "data/cities.csv"
+  source = "../python/data/cities.csv"
+}
+
 resource "aws_emr_studio" "this" {
   auth_mode                   = var.emr_studio.auth_mode
   default_s3_location         = "s3://${aws_s3_bucket.this.bucket}/data"
@@ -57,6 +65,7 @@ resource "aws_emr_studio" "this" {
 resource "aws_ecr_repository" "emr" {
   name                 = "emr-custom"
   image_tag_mutability = "MUTABLE"
+  force_delete = true
   tags = var.tags
 }
 
@@ -105,4 +114,25 @@ resource "aws_emrserverless_application" "custom_image" {
     image_uri = "${aws_ecr_repository.emr.repository_url}:latest"
   }
   tags = var.tags
+  depends_on = [ null_resource.build_custom_image ]
+}
+
+resource "random_password" "postgres" {
+  length           = 32
+  special          = false
+}
+
+resource "null_resource" "build_custom_image" {
+  triggers = {
+    DOCKERFILE_HASH = filemd5("../Dockerfile")
+  }
+  provisioner "local-exec" {
+    command = "/bin/bash ./scripts/build-image.sh"
+    environment = {
+      ECR_REGISTRY_REGION = var.aws_region
+      ECR_REGISTRY_URL    = aws_ecr_repository.emr.repository_url
+      TAG = "latest"
+      DOCKERFILE_PATH   = "./Dockerfile"
+    }
+  }
 }

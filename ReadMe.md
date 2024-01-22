@@ -77,6 +77,6 @@ python scripts/simple.py --local # Do not forget to pass the required arguments
 ## References
 ---
 
-[Tutorial](https://www.youtube.com/watch?v=grfSNj2EMwo&ab_channel=JohnnyChivers)
-[EMR Containers Best Practices](https://aws.github.io/aws-emr-containers-best-practices/)
-[EMR Containers Examples](https://github.com/aws-samples/emr-serverless-samples)
+- [Tutorial](https://www.youtube.com/watch?v=grfSNj2EMwo&ab_channel=JohnnyChivers)
+- [EMR Containers Best Practices](https://aws.github.io/aws-emr-containers-best-practices/)
+- [EMR Containers Examples](https://github.com/aws-samples/emr-serverless-samples)

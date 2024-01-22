@@ -71,6 +71,7 @@ python scripts/simple.py --local # Do not forget to pass the required arguments
 ---
 
 ![Results-00](./artifacts/pictures/results-00.png)
+
 ![Results-01](./artifacts/pictures/results-01.png)
 
 ## References

@@ -1,0 +1,45 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "EMR Serverless StartApplication",
+  "States": {
+    "EMR Serverless StartApplication": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::emr-serverless:startApplication.sync",
+      "Parameters": {
+        "ApplicationId": "${EMR_SERVERLESS_APPLICATION}"
+      },
+      "Next": "EMR Serverless StartJobRun"
+    },
+    "EMR Serverless StartJobRun": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::emr-serverless:startJobRun.sync",
+      "Parameters": {
+        "Name": "StepFunctionsJDBC",
+        "ApplicationId": "${EMR_SERVERLESS_APPLICATION}",
+        "ExecutionRoleArn": "${EMR_SERVERLESS_EXECUTOR_ROLE}",
+        "JobDriver": {
+          "SparkSubmit": {
+            "EntryPoint": "s3://${BUCKET_NAME}/scripts/jdbc.py",
+            "EntryPointArguments": [
+              "--url",
+              "jdbc:postgresql://${POSTGRES_HOST}:5432/postgres",
+              "--user",
+              "${POSTGRES_USER}",
+              "--password",
+              "${POSTGRES_PASSWORD}"
+            ],
+            "SparkSubmitParameters": "--packages org.postgresql:postgresql:42.7.1"
+          }
+        },
+        "ConfigurationOverrides": {
+          "MonitoringConfiguration": {
+            "S3MonitoringConfiguration": {
+              "LogUri": "s3://${BUCKET_NAME}/logs/"
+            }
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

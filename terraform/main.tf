@@ -136,3 +136,28 @@ resource "null_resource" "build_custom_image" {
     }
   }
 }
+
+resource "aws_sfn_state_machine" "this" {
+  name     = "demo-emr-sfn"
+  role_arn = aws_iam_role.sfn.arn
+  definition = templatefile("./templates/step-function-pipeline.json", {
+    EMR_SERVERLESS_APPLICATION = aws_emrserverless_application.basic.id
+    EMR_SERVERLESS_EXECUTOR_ROLE = aws_iam_role.emr_serverless.arn
+    BUCKET_NAME = aws_s3_bucket.this.bucket
+    POSTGRES_HOST = aws_instance.this.public_ip
+    POSTGRES_USER = var.postgres_user
+    POSTGRES_PASSWORD = random_password.postgres.result
+  })
+}
+
+resource "aws_scheduler_schedule" "this" {
+  name = "demo-emr-schedule"
+  flexible_time_window {
+    mode = "OFF"
+  }
+  schedule_expression = "cron(*/5 * * * ? *)"
+  target {
+    arn      = aws_sfn_state_machine.this.arn
+    role_arn = aws_iam_role.eventbridge.arn
+  }
+}

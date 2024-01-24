@@ -180,3 +180,114 @@ resource "aws_iam_instance_profile" "demo_emr_vm" {
   name = "allow_ec2_to_push_to_ecr"
   role = aws_iam_role.demo_emr_vm.name
 }
+
+data "aws_iam_policy_document" "sfn_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["states.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "sfn_policy" {
+  statement {
+    actions = [
+      "emr-serverless:StartApplication",
+      "emr-serverless:GetApplication",
+      "emr-serverless:StopApplication",
+      "emr-serverless:StartJobRun"
+    ]
+    resources = [
+      aws_emrserverless_application.basic.arn,
+      aws_emrserverless_application.custom_image.arn
+    ]
+  }
+  statement {
+    actions = [
+      "iam:PassRole",
+    ]
+    resources = [
+      aws_iam_role.emr_serverless.arn
+    ]
+  }
+  statement {
+    actions = [
+      "emr-serverless:GetJobRun",
+      "emr-serverless:CancelJobRun"
+    ]
+    resources = [
+      "${aws_emrserverless_application.basic.arn}/jobruns/*",
+      "${aws_emrserverless_application.custom_image.arn}/jobruns/*"
+    ]
+  }
+  statement {
+    actions = [
+      "events:PutTargets",
+      "events:PutRule",
+      "events:DescribeRule"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+  statement {
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "sfn" {
+  name               = "StepFunctionDemo"
+  policy = data.aws_iam_policy_document.sfn_policy.json
+  tags = var.tags
+}
+
+resource "aws_iam_role" "sfn" {
+  name               = "StepFunctionDemo"
+  assume_role_policy = data.aws_iam_policy_document.sfn_trust.json
+  managed_policy_arns = [ aws_iam_policy.sfn.arn ]
+  tags = var.tags
+}
+
+data "aws_iam_policy_document" "eventbridge_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["scheduler.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "eventbridge_policy" {
+  statement {
+    actions = [
+      "states:StartExecution"
+    ]
+    resources = [
+      aws_sfn_state_machine.this.arn
+    ]
+  }
+}
+
+resource "aws_iam_policy" "eventbridge" {
+  name               = "EventBridgeDemo"
+  policy = data.aws_iam_policy_document.eventbridge_policy.json
+  tags = var.tags
+}
+
+resource "aws_iam_role" "eventbridge" {
+  name               = "EventBridgeDemo"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge_trust.json
+  managed_policy_arns = [ aws_iam_policy.eventbridge.arn ]
+  tags = var.tags
+}

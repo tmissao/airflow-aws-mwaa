@@ -14,7 +14,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::emr-serverless:startJobRun.sync",
       "Parameters": {
-        "Name": "StepFunctionsJDBC",
+        "Name": "sfn-jdbc-custom-docker-image",
         "ApplicationId": "${EMR_SERVERLESS_APPLICATION}",
         "ExecutionRoleArn": "${EMR_SERVERLESS_EXECUTOR_ROLE}",
         "JobDriver": {
@@ -27,8 +27,7 @@
               "${POSTGRES_USER}",
               "--password",
               "${POSTGRES_PASSWORD}"
-            ],
-            "SparkSubmitParameters": "--packages org.postgresql:postgresql:42.7.1"
+            ]
           }
         },
         "ConfigurationOverrides": {

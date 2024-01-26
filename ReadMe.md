@@ -18,7 +18,9 @@ To demonstrate how to handle dependencies the script [`jdbc.py`](./python/script
 - `jdbc-s3` - Download the dependencies previously upload on S3 using the Spark config `--jars`.
 - `jdbc-s3-custom-docker-image` - Builds a Docker Image from this [Dockerfile](./Dockerfile) embedding the dependencies in this custom image and uses it to execute the job.
 
-The Custom Docker image build process and the jobs submissions are performed by the Virtual Machine provisioned in [vm.tf](./terraform/vm.tf). Also this machine executes a Postgres Database with sample data.
+The Jobs submissions are performed by AWS EventBridge using scheduled events (**every 5 minutes**), that triggers the AWS Step Function which submits the jobs to EMR Serverless
+
+> `Beware!!!` - Disable the eventbridge schedule events in order to not spent your money! Otherwise the trigger will spin up 5 jobs to EMR cluster every 5 minutes.
 
 > If you would like to know how the jobs are submitted check this [script](./terraform/scripts/setup.sh).
 

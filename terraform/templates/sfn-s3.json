@@ -1,0 +1,44 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "EMR Serverless StartApplication",
+  "States": {
+    "EMR Serverless StartApplication": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::emr-serverless:startApplication.sync",
+      "Parameters": {
+        "ApplicationId": "${EMR_SERVERLESS_APPLICATION}"
+      },
+      "Next": "EMR Serverless StartJobRun"
+    },
+    "EMR Serverless StartJobRun": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::emr-serverless:startJobRun.sync",
+      "Parameters": {
+        "Name": "sfn-s3-read-write",
+        "ApplicationId": "${EMR_SERVERLESS_APPLICATION}",
+        "ExecutionRoleArn": "${EMR_SERVERLESS_EXECUTOR_ROLE}",
+        "JobDriver": {
+          "SparkSubmit": {
+            "EntryPoint": "s3://${BUCKET_NAME}/scripts/s3.py",
+            "EntryPointArguments": [
+              "--data_source",
+              "s3://${BUCKET_NAME}/data/cities.csv",
+              "--output_uri",
+              "s3://${BUCKET_NAME}/reports/cities",
+              "--s3_endpoint",
+              "s3-${AWS_REGION}.amazonaws.com"
+            ]
+          }
+        },
+        "ConfigurationOverrides": {
+          "MonitoringConfiguration": {
+            "S3MonitoringConfiguration": {
+              "LogUri": "s3://${BUCKET_NAME}/logs/"
+            }
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

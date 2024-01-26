@@ -33,13 +33,6 @@ data "template_file" "shell-script" {
       POSTGRES_USER = var.postgres_user
       POSTGRES_PASSWORD = random_password.postgres.result
     }))
-    AWS_REGION = var.aws_region
-    EMR_SERVERLESS_APPLICATION = aws_emrserverless_application.basic.id
-    EMR_SERVERLESS_CUSTOM_IMAGE_APPLICATION = aws_emrserverless_application.custom_image.id
-    EMR_SERVERLESS_EXECUTOR_ROLE = aws_iam_role.emr_serverless.arn
-    BUCKET_NAME = aws_s3_bucket.this.bucket
-    POSTGRES_USER = var.postgres_user
-    POSTGRES_PASSWORD = random_password.postgres.result
   }
 }
 

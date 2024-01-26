@@ -274,7 +274,11 @@ data "aws_iam_policy_document" "eventbridge_policy" {
       "states:StartExecution"
     ]
     resources = [
-      aws_sfn_state_machine.this.arn
+      aws_sfn_state_machine.sfn_simple.arn,
+      aws_sfn_state_machine.sfn_jdbc_maven.arn,
+      aws_sfn_state_machine.sfn_jdbc_s3.arn,
+      aws_sfn_state_machine.sfn_jdbc_custom_image.arn,
+      aws_sfn_state_machine.sfn_s3.arn
     ]
   }
 }

@@ -91,7 +91,9 @@ data "aws_iam_policy_document" "ecr_policy" {
     effect = "Allow"
     principals {
       type        = "Service"
-      identifiers = ["emr-serverless.amazonaws.com"]
+      identifiers = [
+        "emr-serverless.amazonaws.com"
+      ]
     }
 
     actions = [
@@ -107,104 +109,127 @@ resource "aws_ecr_repository_policy" "ecr_policy" {
   policy     = data.aws_iam_policy_document.ecr_policy.json
 }
 
-data "aws_iam_policy_document" "demo_emr_vm" {
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-    actions   = ["sts:AssumeRole"]
-  }
-}
-
-data aws_iam_policy_document "demo_emr_vm_policy" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "ecr:BatchGetImage",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:CompleteLayerUpload",
-      "ecr:DescribeImages",
-      "ecr:DescribeRepositories",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:InitiateLayerUpload",
-      "ecr:ListImages",
-      "ecr:PutImage",
-      "ecr:UploadLayerPart"
-    ]
-    resources = [aws_ecr_repository.emr.arn]
-  }
-  statement {
-    effect = "Allow"
-    actions = [
-      "ecr:GetAuthorizationToken",
-    ]
-    resources = ["*"]
-  }
-  statement {
-    effect = "Allow"
-    actions = [
-      "iam:PassRole",
-			"emr-serverless:StartJobRun",
-			"emr-serverless:StartApplication",
-    ]
-    resources = [
-      aws_emrserverless_application.basic.arn,
-      aws_emrserverless_application.custom_image.arn
-    ]
-  }
-  statement {
-    effect = "Allow"
-    actions = [
-      "iam:PassRole",
-    ]
-    resources = [
-      aws_iam_role.emr_serverless.arn
-    ]
-  }
-}
-
-resource "aws_iam_role" "demo_emr_vm" {
-  name = "allow_ec2_to_push_to_ecr"
-  assume_role_policy = "${data.aws_iam_policy_document.demo_emr_vm.json}"
-}
-
-resource "aws_iam_role_policy" "demo_emr_vm" {
-  name       = "allow_ec2_to_push_to_ecr"
-  role       = aws_iam_role.demo_emr_vm.name
-  policy = data.aws_iam_policy_document.demo_emr_vm_policy.json
-}
-
-resource "aws_iam_instance_profile" "demo_emr_vm" {
-  name = "allow_ec2_to_push_to_ecr"
-  role = aws_iam_role.demo_emr_vm.name
-}
-
-data "aws_iam_policy_document" "sfn_trust" {
+data "aws_iam_policy_document" "airflow_trust_policy" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
-      identifiers = ["states.amazonaws.com"]
+      identifiers = [
+        "airflow.amazonaws.com",
+        "airflow-env.amazonaws.com"
+      ]
     }
   }
 }
 
-data "aws_iam_policy_document" "sfn_policy" {
+
+data "aws_iam_policy_document" "airflow_policy" {
+  statement {
+    actions = [
+      "s3:GetObject*",
+      "s3:GetBucket*",
+      "s3:List*"
+    ]
+    resources = [
+      aws_s3_bucket.airflow.arn,
+      "${aws_s3_bucket.airflow.arn}/*"
+    ]
+  }
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:CreateLogGroup",
+      "logs:PutLogEvents",
+      "logs:GetLogEvents",
+      "logs:GetLogRecord",
+      "logs:GetLogGroupFields",
+      "logs:GetQueryResults"
+    ]
+    resources = [
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:airflow-${var.airflow.name}-*"
+    ]
+  }
+  statement {
+    actions = [
+      "logs:DescribeLogGroups",
+      "s3:GetAccountPublicAccessBlock",
+      "cloudwatch:PutMetricData"
+    ]
+    resources = [
+      "*",
+    ]
+  }
+  statement {
+    actions = [
+      "sqs:ChangeMessageVisibility",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+      "sqs:GetQueueUrl",
+      "sqs:ReceiveMessage",
+      "sqs:SendMessage"
+    ]
+    resources = [
+      "arn:aws:sqs:${var.aws_region}:*:airflow-celery-*"
+    ]
+  }
+  statement {
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey*",
+      "kms:Encrypt"
+    ]
+    not_resources = [
+      "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*"
+    ]
+    condition {
+      test     = "StringLike"
+      variable = "kms:ViaService"
+      values = [
+        "sqs.${var.aws_region}.amazonaws.com",
+      ]
+    }
+  }
+  # Custom Permissions
+  statement {
+    actions = [
+      "ssm:PutParameter",
+      "ssm:GetParameters",
+			"ssm:GetParameter"
+    ]
+    resources = [
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/airflow/*"
+    ]
+  }
   statement {
     actions = [
       "emr-serverless:StartApplication",
       "emr-serverless:GetApplication",
       "emr-serverless:StopApplication",
-      "emr-serverless:StartJobRun"
+      "emr-serverless:StartJobRun",
+      "emr-serverless:CreateApplication",
+      "emr-serverless:GetJobRun",
+      "emr-serverless:CancelJobRun",
+      "emr-serverless:TagResource"
     ]
     resources = [
-      aws_emrserverless_application.basic.arn,
-      aws_emrserverless_application.custom_image.arn
+      "arn:aws:emr-serverless:${var.aws_region}:${data.aws_caller_identity.current.account_id}:/*"
     ]
   }
   statement {
+    actions = [
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:CreateNetworkInterface",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeInstances",
+      "ec2:AttachNetworkInterface"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+  statement {
+    effect = "Allow"
     actions = [
       "iam:PassRole",
     ]
@@ -212,86 +237,39 @@ data "aws_iam_policy_document" "sfn_policy" {
       aws_iam_role.emr_serverless.arn
     ]
   }
-  statement {
+   statement {
     actions = [
-      "emr-serverless:GetJobRun",
-      "emr-serverless:CancelJobRun"
+      "ecr:BatchGetImage",
+      "ecr:DescribeImages",
+      "ecr:GetDownloadUrlForLayer",
     ]
     resources = [
-      "${aws_emrserverless_application.basic.arn}/jobruns/*",
-      "${aws_emrserverless_application.custom_image.arn}/jobruns/*"
+      aws_ecr_repository.emr.arn
     ]
   }
   statement {
     actions = [
-      "events:PutTargets",
-      "events:PutRule",
-      "events:DescribeRule"
+      "s3:GetObject*",
+      "s3:GetBucket*",
+      "s3:List*",
+      "s3:PutObject*",
     ]
     resources = [
-      "*"
-    ]
-  }
-  statement {
-    actions = [
-      "xray:PutTraceSegments",
-      "xray:PutTelemetryRecords",
-      "xray:GetSamplingRules",
-      "xray:GetSamplingTargets"
-    ]
-    resources = [
-      "*"
+      aws_s3_bucket.emr.arn,
+      "${aws_s3_bucket.emr.arn}/*"
     ]
   }
 }
 
-resource "aws_iam_policy" "sfn" {
-  name               = "StepFunctionDemo"
-  policy = data.aws_iam_policy_document.sfn_policy.json
+resource "aws_iam_policy" "airflow" {
+  name               = "AirflowExecutor"
+  policy = data.aws_iam_policy_document.airflow_policy.json
   tags = var.tags
 }
 
-resource "aws_iam_role" "sfn" {
-  name               = "StepFunctionDemo"
-  assume_role_policy = data.aws_iam_policy_document.sfn_trust.json
-  managed_policy_arns = [ aws_iam_policy.sfn.arn ]
-  tags = var.tags
-}
-
-data "aws_iam_policy_document" "eventbridge_trust" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["scheduler.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "eventbridge_policy" {
-  statement {
-    actions = [
-      "states:StartExecution"
-    ]
-    resources = [
-      aws_sfn_state_machine.sfn_simple.arn,
-      aws_sfn_state_machine.sfn_jdbc_maven.arn,
-      aws_sfn_state_machine.sfn_jdbc_s3.arn,
-      aws_sfn_state_machine.sfn_jdbc_custom_image.arn,
-      aws_sfn_state_machine.sfn_s3.arn
-    ]
-  }
-}
-
-resource "aws_iam_policy" "eventbridge" {
-  name               = "EventBridgeDemo"
-  policy = data.aws_iam_policy_document.eventbridge_policy.json
-  tags = var.tags
-}
-
-resource "aws_iam_role" "eventbridge" {
-  name               = "EventBridgeDemo"
-  assume_role_policy = data.aws_iam_policy_document.eventbridge_trust.json
-  managed_policy_arns = [ aws_iam_policy.eventbridge.arn ]
+resource "aws_iam_role" "airflow" {
+  name               = "AirflowExecutor"
+  assume_role_policy = data.aws_iam_policy_document.airflow_trust_policy.json
+  managed_policy_arns = [aws_iam_policy.airflow.arn]
   tags = var.tags
 }

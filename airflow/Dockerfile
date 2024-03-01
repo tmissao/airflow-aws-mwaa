@@ -1,0 +1,2 @@
+FROM apache/airflow:2.8.1-python3.11
+RUN pip install --no-cache-dir apache-airflow[async,amazon,celery,cncf.kubernetes,docker,dask,elasticsearch,ftp,grpc,hashicorp,http,ldap,google,microsoft.azure,mysql,postgres,redis,sendgrid,sftp,slack,ssh,statsd,virtualenv]==2.8.1

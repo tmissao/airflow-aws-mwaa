@@ -43,3 +43,8 @@ terraform.rc
 
 **/.venv
 **/.venv/*
+
+# Airflow
+
+airflow/logs
+airflow/logs/*  

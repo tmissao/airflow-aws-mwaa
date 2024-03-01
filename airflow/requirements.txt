@@ -1,0 +1,2 @@
+-c https://raw.githubusercontent.com/apache/airflow/constraints-2.8.1/constraints-3.11.txt
+apache-airflow[async,amazon,celery,cncf.kubernetes,docker,dask,elasticsearch,ftp,grpc,hashicorp,http,google,microsoft.azure,mysql,postgres,redis,sftp,slack,ssh,statsd,virtualenv]==2.8.1

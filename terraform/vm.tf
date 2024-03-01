@@ -59,7 +59,6 @@ resource "aws_instance" "this" {
   user_data_base64 = data.template_cloudinit_config.config.rendered
   user_data_replace_on_change = true
   associate_public_ip_address = true
-  iam_instance_profile = aws_iam_instance_profile.demo_emr_vm.name
   volume_tags = merge(
     var.tags,
     { Name = "emr-demo"}
@@ -68,4 +67,7 @@ resource "aws_instance" "this" {
     var.tags,
     { Name = "emr-demo"}
   )
+  lifecycle {
+    ignore_changes = [ ami ]
+  }
 }

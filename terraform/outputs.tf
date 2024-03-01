@@ -1,7 +1,3 @@
-output "app" {
-  value = aws_emrserverless_application.basic.id
-}
-
-output "executor" {
-  value = aws_iam_role.emr_serverless.arn
+output "airflow_url" {
+  value = aws_mwaa_environment.this.webserver_url 
 }
